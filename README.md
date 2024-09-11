@@ -1,4 +1,5 @@
 <div align="center">
+  ![Visualization of the codebase](./diagram.svg)
   <a href="https://questdb.io/" target="blank"><img alt="QuestDB Logo" src="https://questdb.io/img/questdb-logo-themed.svg" width="305px"/></a>
 </div>
 <p>&nbsp;</p>
