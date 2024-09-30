@@ -79,7 +79,7 @@ public class LineTcpConnectionContext extends IOContext<LineTcpConnectionContext
     private long lastQueueFullLogMillis = 0;
     private long nextCheckIdleTime;
     private long nextCommitTime;
-    private final LineMetrics lineMetrics;
+    private LineMetrics lineMetrics;
 
     public LineTcpConnectionContext(LineTcpReceiverConfiguration configuration, LineTcpMeasurementScheduler scheduler, Metrics metrics) {
         super(
@@ -90,7 +90,7 @@ public class LineTcpConnectionContext extends IOContext<LineTcpConnectionContext
         );
         try {
             this.configuration = configuration;
-            this.lineMetrics = lineMetrics;
+          //  this.lineMetrics = lineMetrics;
             nf = configuration.getNetworkFacade();
             disconnectOnError = configuration.getDisconnectOnError();
             this.scheduler = scheduler;
