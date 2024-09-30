@@ -25,7 +25,24 @@
 package io.questdb.cutlass.http.processors;
 
 import io.questdb.cairo.CairoEngine;
-import io.questdb.cutlass.http.*;
+import io.questdb.cutlass.http.HttpChunkedResponse;
+import io.questdb.cutlass.http.HttpConnectionContext;
+import static io.questdb.cutlass.http.HttpConstants.CONTENT_TYPE_JSON;
+import io.questdb.cutlass.http.HttpException;
+import io.questdb.cutlass.http.HttpMultipartContentListener;
+import io.questdb.cutlass.http.HttpRequestHeader;
+import io.questdb.cutlass.http.HttpRequestProcessor;
+import io.questdb.cutlass.http.LocalValue;
+import static io.questdb.cutlass.http.processors.LineHttpProcessorState.Status.ENCODING_NOT_SUPPORTED;
+import static io.questdb.cutlass.http.processors.LineHttpProcessorState.Status.METHOD_NOT_SUPPORTED;
+import static io.questdb.cutlass.http.processors.LineHttpProcessorState.Status.PRECISION_NOT_SUPPORTED;
+import io.questdb.cutlass.line.LineMetrics;
+import static io.questdb.cutlass.line.tcp.LineTcpParser.ENTITY_UNIT_HOUR;
+import static io.questdb.cutlass.line.tcp.LineTcpParser.ENTITY_UNIT_MICRO;
+import static io.questdb.cutlass.line.tcp.LineTcpParser.ENTITY_UNIT_MILLI;
+import static io.questdb.cutlass.line.tcp.LineTcpParser.ENTITY_UNIT_MINUTE;
+import static io.questdb.cutlass.line.tcp.LineTcpParser.ENTITY_UNIT_NANO;
+import static io.questdb.cutlass.line.tcp.LineTcpParser.ENTITY_UNIT_SECOND;
 import io.questdb.log.Log;
 import io.questdb.log.LogFactory;
 import io.questdb.network.PeerDisconnectedException;
@@ -37,10 +54,6 @@ import io.questdb.std.str.Utf8Sequence;
 import io.questdb.std.str.Utf8String;
 import io.questdb.std.str.Utf8s;
 
-import static io.questdb.cutlass.http.HttpConstants.CONTENT_TYPE_JSON;
-import static io.questdb.cutlass.http.processors.LineHttpProcessorState.Status.*;
-import static io.questdb.cutlass.line.tcp.LineTcpParser.*;
-
 public class LineHttpProcessor implements HttpRequestProcessor, HttpMultipartContentListener {
     private static final Utf8String CONTENT_ENCODING = new Utf8String("Content-Encoding");
     private static final Log LOG = LogFactory.getLog(StaticContentProcessor.class);
@@ -50,6 +63,7 @@ public class LineHttpProcessor implements HttpRequestProcessor, HttpMultipartCon
     private final CairoEngine engine;
     private final int maxResponseContentLength;
     private final int recvBufferSize;
+    private final LineMetrics lineMetrics;
     LineHttpProcessorState state;
 
     public LineHttpProcessor(CairoEngine engine, int recvBufferSize, int maxResponseContentLength, LineHttpProcessorConfiguration configuration) {
@@ -57,11 +71,13 @@ public class LineHttpProcessor implements HttpRequestProcessor, HttpMultipartCon
         this.recvBufferSize = recvBufferSize;
         this.maxResponseContentLength = maxResponseContentLength;
         this.configuration = configuration;
+        this.lineMetrics = lineMetrics;
     }
 
     @Override
     public void onChunk(long lo, long hi) {
         this.state.parse(lo, hi);
+        lineMetrics.lineHttpRecvBytes().add(hi - lo);
     }
 
     @Override

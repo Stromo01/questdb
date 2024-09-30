@@ -24,6 +24,8 @@
 
 package io.questdb.cutlass.line.tcp;
 
+import org.jetbrains.annotations.NotNull;
+
 import io.questdb.Metrics;
 import io.questdb.cairo.CairoException;
 import io.questdb.cairo.CommitFailedException;
@@ -32,6 +34,7 @@ import io.questdb.cairo.security.DenyAllSecurityContext;
 import io.questdb.cairo.security.SecurityContextFactory;
 import io.questdb.cutlass.auth.AuthenticatorException;
 import io.questdb.cutlass.auth.SocketAuthenticator;
+import io.questdb.cutlass.line.LineMetrics;
 import io.questdb.cutlass.line.tcp.LineTcpParser.ParseResult;
 import io.questdb.log.Log;
 import io.questdb.log.LogFactory;
@@ -39,12 +42,16 @@ import io.questdb.log.LogRecord;
 import io.questdb.network.IOContext;
 import io.questdb.network.IODispatcher;
 import io.questdb.network.NetworkFacade;
-import io.questdb.std.*;
+import io.questdb.std.MemoryTag;
+import io.questdb.std.Misc;
+import io.questdb.std.ObjList;
+import io.questdb.std.Unsafe;
+import io.questdb.std.Utf8StringObjHashMap;
+import io.questdb.std.Vect;
 import io.questdb.std.datetime.millitime.MillisecondClock;
 import io.questdb.std.str.DirectUtf8Sequence;
 import io.questdb.std.str.DirectUtf8String;
 import io.questdb.std.str.Utf8String;
-import org.jetbrains.annotations.NotNull;
 
 public class LineTcpConnectionContext extends IOContext<LineTcpConnectionContext> {
     private static final Log LOG = LogFactory.getLog(LineTcpConnectionContext.class);
@@ -72,6 +79,7 @@ public class LineTcpConnectionContext extends IOContext<LineTcpConnectionContext
     private long lastQueueFullLogMillis = 0;
     private long nextCheckIdleTime;
     private long nextCommitTime;
+    private final LineMetrics lineMetrics;
 
     public LineTcpConnectionContext(LineTcpReceiverConfiguration configuration, LineTcpMeasurementScheduler scheduler, Metrics metrics) {
         super(
@@ -82,6 +90,7 @@ public class LineTcpConnectionContext extends IOContext<LineTcpConnectionContext
         );
         try {
             this.configuration = configuration;
+            this.lineMetrics = lineMetrics;
             nf = configuration.getNetworkFacade();
             disconnectOnError = configuration.getDisconnectOnError();
             this.scheduler = scheduler;
@@ -434,6 +443,7 @@ public class LineTcpConnectionContext extends IOContext<LineTcpConnectionContext
             int bytesRead = socket.recv(recvBufPos, bufferRemaining);
             if (bytesRead > 0) {
                 recvBufPos += bytesRead;
+                lineMetrics.lineTcpRecvBytes().add(bytesRead);
                 bufferRemaining -= bytesRead;
             } else {
                 peerDisconnected = bytesRead < 0;
@@ -443,6 +453,17 @@ public class LineTcpConnectionContext extends IOContext<LineTcpConnectionContext
         return !peerDisconnected;
     }
 
+/* 
+    protected boolean read() {
+        long bytesRead = nf.recv(fd, recvBufPos, recvBufEnd - recvBufPos);
+        if (bytesRead > 0) {
+            recvBufPos += bytesRead;
+            lineMetrics.lineTcpRecvBytes().add(bytesRead);
+            return true;
+        }
+        return false;
+    }
+*/
     TableUpdateDetails removeTableUpdateDetails(DirectUtf8Sequence tableNameUtf8) {
         final int keyIndex = tableUpdateDetailsUtf8.keyIndex(tableNameUtf8);
         if (keyIndex < 0) {
