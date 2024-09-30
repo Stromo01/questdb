@@ -22,32 +22,20 @@
  *
  ******************************************************************************/
 
- package io.questdb.cutlass.line;
+package io.questdb.cutlass.line;
 
- import io.questdb.metrics.Counter;
- import io.questdb.metrics.MetricsRegistry;
- 
- public class LineMetrics {
- 
-     private final LongGauge connectionCountGauge;
-     private final Counter lineTcpRecvBytes;
-     private final Counter lineHttpRecvBytes;
- 
-     public LineMetrics(MetricsRegistry metricsRegistry) {
-         this.connectionCountGauge = metricsRegistry.newLongGauge("line_tcp_connections");
-         this.lineTcpRecvBytes = metricsRegistry.newCounter("line_tcp_recv_bytes");
-         this.lineHttpRecvBytes = metricsRegistry.newCounter("line_http_recv_bytes");
-     }
- 
-     public LongGauge connectionCountGauge() {
-         return connectionCountGauge;
-     }
- 
-     public Counter lineTcpRecvBytes() {
-         return lineTcpRecvBytes;
-     }
- 
-     public Counter lineHttpRecvBytes() {
-         return lineHttpRecvBytes;
-     }
- }
+import io.questdb.metrics.LongGauge;
+import io.questdb.metrics.MetricsRegistry;
+
+public class LineMetrics {
+
+    private final LongGauge connectionCountGauge;
+
+    public LineMetrics(MetricsRegistry metricsRegistry) {
+        this.connectionCountGauge = metricsRegistry.newLongGauge("line_tcp_connections");
+    }
+
+    public LongGauge connectionCountGauge() {
+        return connectionCountGauge;
+    }
+}
