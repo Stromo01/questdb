@@ -443,7 +443,7 @@ public class LineTcpConnectionContext extends IOContext<LineTcpConnectionContext
             int bytesRead = socket.recv(recvBufPos, bufferRemaining);
             if (bytesRead > 0) {
                 recvBufPos += bytesRead;
-                lineMetrics.lineTcpRecvBytes().add(bytesRead);
+                metrics.line().lineTcpRecvBytes().add(bytesRead);
                 bufferRemaining -= bytesRead;
             } else {
                 peerDisconnected = bytesRead < 0;

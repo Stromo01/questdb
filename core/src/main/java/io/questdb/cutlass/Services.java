@@ -112,7 +112,8 @@ public class Services {
                 cairoEngine,
                 httpServerConfiguration.getHttpContextConfiguration().getRecvBufferSize(),
                 httpServerConfiguration.getHttpContextConfiguration().getSendBufferSize(),
-                httpServerConfiguration.getLineHttpProcessorConfiguration()
+                httpServerConfiguration.getLineHttpProcessorConfiguration(),
+                metrics
         );
 
         HttpServer.addDefaultEndpoints(

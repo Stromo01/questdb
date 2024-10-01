@@ -43,6 +43,7 @@ import static io.questdb.cutlass.line.tcp.LineTcpParser.ENTITY_UNIT_MILLI;
 import static io.questdb.cutlass.line.tcp.LineTcpParser.ENTITY_UNIT_MINUTE;
 import static io.questdb.cutlass.line.tcp.LineTcpParser.ENTITY_UNIT_NANO;
 import static io.questdb.cutlass.line.tcp.LineTcpParser.ENTITY_UNIT_SECOND;
+import io.questdb.Metrics;
 import io.questdb.log.Log;
 import io.questdb.log.LogFactory;
 import io.questdb.network.PeerDisconnectedException;
@@ -63,21 +64,21 @@ public class LineHttpProcessor implements HttpRequestProcessor, HttpMultipartCon
     private final CairoEngine engine;
     private final int maxResponseContentLength;
     private final int recvBufferSize;
-    private LineMetrics lineMetrics;
+    private final Metrics metrics;
     LineHttpProcessorState state;
 
-    public LineHttpProcessor(CairoEngine engine, int recvBufferSize, int maxResponseContentLength, LineHttpProcessorConfiguration configuration) {
+    public LineHttpProcessor(CairoEngine engine, int recvBufferSize, int maxResponseContentLength, LineHttpProcessorConfiguration configuration, Metrics metrics) {
         this.engine = engine;
         this.recvBufferSize = recvBufferSize;
         this.maxResponseContentLength = maxResponseContentLength;
         this.configuration = configuration;
-       // this.lineMetrics = lineMetrics;
+        this.metrics = metrics;
     }
 
     @Override
     public void onChunk(long lo, long hi) {
         this.state.parse(lo, hi);
-        lineMetrics.lineHttpRecvBytes().add(hi - lo);
+        metrics.line().lineHttpRecvBytes().add(hi - lo);
     }
 
     @Override
